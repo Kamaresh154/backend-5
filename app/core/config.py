@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,7 @@ class Settings(BaseSettings):
     dev_sqlite: bool = False
     sqlite_path: str = "./kidzventure_dev.db"
 
+    # Database — override via .env or environment variables
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/kidzventure"
     database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/kidzventure"
 
@@ -30,7 +32,8 @@ class Settings(BaseSettings):
             return f"sqlite+aiosqlite:///{self.sqlite_path}"
         return self.database_url
 
-    jwt_secret: str = "dev-secret-change-in-production"
+    # JWT — MUST be overridden via JWT_SECRET env var in production
+    jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
@@ -40,6 +43,22 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def validate_production_secrets(self) -> None:
+        """Call on startup to ensure secrets are properly set."""
+        if not self.jwt_secret:
+            raise ValueError(
+                "JWT_SECRET environment variable is not set. "
+                "Generate a strong secret and set it before running in production: "
+                "  python -c \"import secrets; print(secrets.token_hex(64))\""
+            )
+        if self.jwt_secret in ("dev-secret-change-in-production", "secret", "changeme"):
+            import warnings
+            warnings.warn(
+                "WARNING: JWT_SECRET is set to a known weak default. "
+                "Please set a strong random secret via the JWT_SECRET environment variable.",
+                stacklevel=2,
+            )
 
 
 @lru_cache
