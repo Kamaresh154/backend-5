@@ -15,6 +15,8 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Validate secrets on startup — raises if JWT_SECRET is missing
+    settings.validate_production_secrets()
     if settings.use_sqlite:
         from app.db.bootstrap import bootstrap_sqlite
 
