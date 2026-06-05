@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
-    attendance, auth, calls, crm, franchise, invoices, ledger,
+    attendance, auth, calls_api, crm, franchise, invoices, ledger,
     organizations, parents, payroll, reports, students, users,
 )
 
@@ -18,4 +18,4 @@ api_router.include_router(crm.router)
 api_router.include_router(reports.router)
 api_router.include_router(franchise.router)
 api_router.include_router(users.router)
-api_router.include_router(calls.router)
+api_router.include_router(calls_api.router)
