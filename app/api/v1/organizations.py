@@ -1,8 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import select
 
 from app.core.deps import CurrentUserDep, DbSession
+from app.models.organization import Organization
 from app.schemas.organization import (
     CenterCreate,
     CenterResponse,
@@ -28,6 +30,18 @@ def _resolve_org_id(current: CurrentUserDep, org_id: UUID | None) -> UUID:
 @router.get("/me", response_model=OrganizationResponse)
 async def get_my_organization(current: CurrentUserDep, db: DbSession) -> OrganizationResponse:
     current.require_permission("organizations.read")
+    # Super admin may have no org_id in JWT — return the first active org
+    if current.org_id is None and "super_admin" in current.roles:
+        result = await db.execute(
+            select(Organization)
+            .where(Organization.deleted_at.is_(None))
+            .order_by(Organization.created_at)
+            .limit(1)
+        )
+        org = result.scalar_one_or_none()
+        if org is None:
+            raise HTTPException(status_code=404, detail="No organization found")
+        return OrganizationResponse.model_validate(org)
     org_id = _resolve_org_id(current, None)
     org = await organization_service.get_organization(db, org_id)
     return OrganizationResponse.model_validate(org)
