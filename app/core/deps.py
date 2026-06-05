@@ -85,3 +85,27 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
+
+
+async def resolve_org_id(current: "CurrentUser", db: "AsyncSession") -> "UUID":
+    """Return org_id for the current user.
+    For super_admin with no org_id in JWT, returns the first active organization."""
+    from uuid import UUID as _UUID
+    from sqlalchemy import select as _select
+    from fastapi import HTTPException as _HTTPException
+    from app.models.organization import Organization
+
+    if current.org_id is not None:
+        return current.org_id
+    if "super_admin" in current.roles:
+        result = await db.execute(
+            _select(Organization)
+            .where(Organization.deleted_at.is_(None))
+            .order_by(Organization.created_at)
+            .limit(1)
+        )
+        org = result.scalar_one_or_none()
+        if org is None:
+            raise _HTTPException(status_code=404, detail="No organization found")
+        return org.id
+    raise _HTTPException(status_code=400, detail="No organization context")
