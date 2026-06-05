@@ -1,4 +1,4 @@
-import app.models.calls  # ensure tables are registered
+import app.models.calls_model  # ensure tables are registered
 """Initialize SQLite dev DB with schema, RBAC, and demo data."""
 
 from sqlalchemy import select
