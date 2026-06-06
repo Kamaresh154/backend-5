@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
-    cors_origins: str = cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://frontendbb.onrender.com"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://frontendbb.onrender.com"
 
     @property
     def cors_origin_list(self) -> list[str]:
